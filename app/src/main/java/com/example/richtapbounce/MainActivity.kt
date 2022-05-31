@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private var ballIndex = 0
     // Based on experimentation dropping the ball from a maximum possible height
     // 小球从最高处落下碰地时的最大速度值，以此折算振动强度；可酌情调整
-    private var maxFallingVelocity = 26.5F
+    private var maxFallingVelocity = 45.5F
 
     // Haptic effect description files
     private lateinit var heBallToBound: String
@@ -181,6 +181,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     fun View.getAmplitude(): Int {
         val body = getTag(R.id.wd_view_body_tag) as Body
         val vel = body.linearVelocity.length()
+        //Log.i(TAG, "The current velocity: $vel") // test to get the maximum velocity
         if (vel > maxFallingVelocity) maxFallingVelocity = vel
         return floor(vel / maxFallingVelocity * 255).toInt()
     }
