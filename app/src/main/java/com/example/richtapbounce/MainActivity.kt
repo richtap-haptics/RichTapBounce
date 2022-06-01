@@ -47,6 +47,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         super.onCreate(savedInstanceState)
         gimbal = Gimbal(this)
         gimbal.lock()
+        Log.i(TAG, "Main thread: ${Thread.currentThread().id}")
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -146,8 +147,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
             gimbal.normalizeGravityEvent(event)
             // Multiply a coefficient to speed up the balls' falling
-            // 为了加快小球下坠速度，X方向的重力系数放大6倍，Y方向的重力系数放大8倍
-            binding.jboxContainer.changeWorldGravity(-event.values[0]*6, event.values[1]*8)
+            // 为了加快小球下坠速度，X方向的重力系数放大6倍，Y方向的重力系数放大6倍（注：不能太大，否则会引入异常的碰撞）
+            binding.jboxContainer.changeWorldGravity(-event.values[0]*6, event.values[1]*6)
         }
     }
 
@@ -155,7 +156,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private val onCollisionListener = object : OnCollisionListener {
         override fun onCollisionEntered(viewIdA: Int, viewIdB: Int) {
-            Log.i(TAG, "${getViewName(viewIdA)} is collided with ${getViewName(viewIdB)}, thread: ${Thread.currentThread().id}")
+            Log.i(TAG, "${getViewName(viewIdA)} is collided with ${getViewName(viewIdB)} - entered, thread: ${Thread.currentThread().id}")
             if (isBall(viewIdA)) {
                 if (isBall(viewIdB)) {
                     RichTapUtils.getInstance().playHaptic(heBallWithBall, 0)
@@ -163,12 +164,16 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                     // Calculate vibration amplitude according to the velocity of the ball
                     // 根据小球碰撞时的速度动态计算振动的强度
                     val view = binding.jboxContainer.findViewById<View>(viewIdA)
-                    RichTapUtils.getInstance().playHaptic(heBallToBound, 0, view.getAmplitude())
+                    val amplitude = view.getAmplitude()
+                    Log.v(TAG, "Playing haptic - amplitude: $amplitude")
+                    RichTapUtils.getInstance().playHaptic(heBallToBound, 0, amplitude)
                 }
             } else {
                 if (isBall(viewIdB)) {
                     val view = binding.jboxContainer.findViewById<View>(viewIdB)
-                    RichTapUtils.getInstance().playHaptic(heBallToBound, 0, view.getAmplitude())
+                    val amplitude = view.getAmplitude()
+                    Log.v(TAG, "Playing haptic - amplitude: $amplitude")
+                    RichTapUtils.getInstance().playHaptic(heBallToBound, 0, amplitude)
                 }
             }
         }
@@ -180,9 +185,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     fun View.getAmplitude(): Int {
         val body = getTag(R.id.wd_view_body_tag) as Body
-        val vel = body.linearVelocity.length()
-        //Log.i(TAG, "The current velocity: $vel") // test to get the maximum velocity
-        if (vel > maxFallingVelocity) maxFallingVelocity = vel
+        var vel = body.linearVelocity.length()
+        //Log.w(TAG, "The current velocity: $vel") // test to get the maximum velocity
+        if (vel >= maxFallingVelocity) return 255
         return floor(vel / maxFallingVelocity * 255).toInt()
     }
 

@@ -270,7 +270,7 @@ public class JBoxCollisionImpl {
         for (int i = 0; i < childCount; i++) {
             View view = viewGroup.getChildAt(i);
             if (isBodyView(view)) {
-                applyLinearImpulse(x*50, y*50, view); // 50倍刺激！
+                applyLinearImpulse(x*30, y*30, view); // 30倍刺激！
             }
         }
     }
